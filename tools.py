@@ -334,5 +334,5 @@ if __name__ == "__main__":
 
     root_dir = r"\maskDetection\with_mask"
     face_databse_dir = r"maskDetection\no_mask"
-    pb_path = r".\models\FLW_0.98\pb_model.pb"
-    face_matching_evaluation(root_dir, face_databse_dir, pb_path, test_num=10000, GPU_ratio=None)
+    pb_path = r"models\face_mask_detection.pb"
+    face_matching_evaluation(root_dir, face_databse_dir, pb_path, test_num=1000, GPU_ratio=None)

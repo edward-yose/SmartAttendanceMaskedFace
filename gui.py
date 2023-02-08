@@ -2,11 +2,8 @@ import cv2
 import os
 import time
 import math
-import string
 import datetime
-import imutils
 import numpy as np
-import pyshine as ps
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import *
@@ -16,6 +13,7 @@ from PyQt5.QtCore import *
 from face_alignment import FaceMaskDetection
 from attendance import DailyAttendanceEntry
 from tools import model_restore_from_pb
+from report_tools import GenerateReport
 
 import tensorflow
 
@@ -32,8 +30,6 @@ room_id = "001"
 
 
 def video_init(camera_source=0, resolution="480", to_write=False, save_dir=None):
-    print("[INFO] : High Level Function Video Init Triggered ")
-
     # ----var
     writer = None
     resolution_dict = {"480": [480, 640], "720": [720, 1280], "1080": [1080, 1920]}
@@ -160,16 +156,16 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.label_info)
         self.menuLayout = QtWidgets.QVBoxLayout()
         self.menuLayout.setObjectName("menuLayout")
-        self.btn_change_room = QtWidgets.QPushButton(self.layoutWidget)
+        self.btn_settings = QtWidgets.QPushButton(self.layoutWidget)
         font = QtGui.QFont()
         font.setFamily("Arial Rounded MT Bold")
         font.setPointSize(14)
         font.setBold(False)
         font.setWeight(50)
-        self.btn_change_room.setFont(font)
-        self.btn_change_room.setCheckable(False)
-        self.btn_change_room.setObjectName("btn_change_room")
-        self.menuLayout.addWidget(self.btn_change_room)
+        self.btn_settings.setFont(font)
+        self.btn_settings.setCheckable(False)
+        self.btn_settings.setObjectName("btn_settings")
+        self.menuLayout.addWidget(self.btn_settings)
         self.btn_report = QtWidgets.QPushButton(self.layoutWidget)
         font = QtGui.QFont()
         font.setFamily("Arial Rounded MT Bold")
@@ -215,7 +211,7 @@ class Ui_MainWindow(object):
         self.label_room_id.setText(room_id)
         self.label_camera.setPixmap(grey)
         self.btn_exit.setDisabled(True)
-        self.btn_change_room.setDisabled(True)
+        self.btn_settings.setDisabled(True)
         self.btn_report.setDisabled(True)
         self.btn_save_new.setDisabled(True)
 
@@ -229,6 +225,7 @@ class Ui_MainWindow(object):
         # Manipulate QLabel Datetime Thread
         self.datetime_thread = DatetimeThread()
         self.datetime_thread.update_time.connect(self.UpdateTime)
+        GenerateReport.generate_para_report("OpenCV Thread start")
         self.datetime_thread.start()
 
         # Manipulate Qlabel Video Camera Thread
@@ -259,7 +256,7 @@ class Ui_MainWindow(object):
 
     def ImageUpdateSlot(self, image):
         self.label_camera.setPixmap(QPixmap.fromImage(image))
-        # self.btn_change_room.setDisabled(False)
+        # self.btn_settings.setDisabled(False)
         # self.btn_report.setDisabled(False)
         # self.btn_save_new.setDisabled(False)
         self.btn_exit.setDisabled(False)
@@ -280,11 +277,12 @@ class Ui_MainWindow(object):
         self.label_time.setText(_translate("MainWindow", "-"))
         self.label.setText(_translate("MainWindow", "Date :"))
         self.label_3.setText(_translate("MainWindow", "Room ID"))
-        self.label_room_id.setText(_translate("MainWindow", "001"))
+        self.label_room_id.setText(_translate("MainWindow", room_id))
         self.label_info.setText(_translate("MainWindow", "TextLabel"))
-        self.btn_change_room.setText(_translate("MainWindow", "Change Room"))
+        self.btn_settings.setText(_translate("MainWindow", "Settings"))
         self.btn_report.setText(_translate("MainWindow", "Generate Report"))
         self.btn_save_new.setText(_translate("MainWindow", "Register Face"))
+
         self.btn_exit.setText(_translate("MainWindow", "End System"))
 
 
@@ -322,20 +320,20 @@ class VideoThread(QThread):
 
     def run(self):
         self.ThreadActive = True
-        # Alternative Video Streaming init (Dump at final product)
-        # TODO after cap done executed and well, dump this algorithm
-        cap2 = cv2.VideoCapture(0)
 
         # Video streaming init
+        GenerateReport.generate_para_report("Video Init 1280x720")
         cap, height, width, writer = video_init(camera_source=self.camera_source,
                                                 resolution="720",
                                                 to_write=False,
                                                 save_dir=None)
 
         # Face detection init (GPU RATION 0.1)
+        GenerateReport.generate_para_report("Face Detection Load 10% GPU if available")
         fmd = FaceMaskDetection(self.face_mask_model_path, self.margin, GPU_ratio=None)
 
         # Face recognition init
+        GenerateReport.generate_para_report("Face Recognition with GPU if available")
         sess, tf_dict = model_restore_from_pb(self.pb_path, self.node_dict, GPU_ratio=None)
         print("[INFO] TF DICT : ", tf_dict)
         tf_input = tf_dict['input']
@@ -349,7 +347,8 @@ class VideoThread(QThread):
             tf_keep_prob = tf_dict['keep_prob']
             feed_dict[tf_keep_prob] = 1.0
 
-            # ----read images from the database
+            # Read images from the database
+            GenerateReport.generate_para_report("Read Images and store in embeddings")
             d_t = time.time()
             paths = [file.path for file in os.scandir(self.ref_dir) if file.name[-3:] in img_format]
             len_ref_path = len(paths)
@@ -386,14 +385,16 @@ class VideoThread(QThread):
 
                 print("ref embedding shape", embeddings_ref.shape)
                 print("It takes {} secs to get {} embeddings".format(d_t, len_ref_path))
+                GenerateReport.generate_para_report(str("Embeddings finished within " + str(d_t) +
+                                                        " seconds and gain " + str(len_ref_path) + "embeddings"))
 
-            # ----tf setting for calculating distance
+            # Tensor setting for calculating distance
             if len_ref_path > 0:
                 with tf.Graph().as_default():
                     tf_tar = tf.placeholder(dtype=tf.float32, shape=tf_embeddings.shape[-1])
                     tf_ref = tf.placeholder(dtype=tf.float32, shape=tf_embeddings.shape)
                     tf_dis = tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(tf_ref, tf_tar)), axis=1))
-                    # ----GPU setting
+                    # GPU setting
                     config = tf.ConfigProto(log_device_placement=True,
                                             allow_soft_placement=True,
                                             )
@@ -403,6 +404,7 @@ class VideoThread(QThread):
 
                 feed_dict_2 = {tf_ref: embeddings_ref}
 
+        GenerateReport.generate_para_report("OpenCV Init [END]")
         while self.ThreadActive:
             ret, img = cap.read()
             if ret:
@@ -422,8 +424,8 @@ class VideoThread(QThread):
                         else:
                             color = (0, 0, 255)  # (B,G,R) --> Red(without masks)
                         cv2.rectangle(img, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), color, 2)
-                        cv2.putText(img, "%s: %.2f" % (self.id2class[class_id], re_confidence[num]), (bbox[0] + 2, bbox[1] - 2),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, color)
+                        # cv2.putText(img, "%s: %.2f" % (self.id2class[class_id], re_confidence[num]), (bbox[0] + 2, bbox[1] - 2),
+                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.8, color)
 
                         # ----face recognition
                         name = ""
@@ -457,9 +459,8 @@ class VideoThread(QThread):
                 if self.frame_count >= 10:
                     self.FPS = "FPS=%1f" % (10 / (time.time() - t_start))
                     self.frame_count = 0
-                print("FPS: ", self.FPS)
 
-                cv2.putText(img, self.FPS, (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                cv2.putText(img, self.FPS, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
                 Image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 ConvertToQtFormat = QImage(Image.data,
@@ -467,12 +468,13 @@ class VideoThread(QThread):
                                            Image.shape[0],
                                            QImage.Format_RGB888)
                 Pic = ConvertToQtFormat.scaled(1280, 720, Qt.KeepAspectRatio)
+                # TODO Implement FPS Catch Report
+                writefps = self.FPS
+                GenerateReport.generate_fps_report(writefps)
                 self.ImageUpdate.emit(Pic)
 
                 if writer is not None:
                     writer.write(img)
-
-                # TODO input all new interactions
 
         if writer is not None:
             writer.release()
@@ -483,13 +485,13 @@ class VideoThread(QThread):
 
 
 if __name__ == "__main__":
-    def run():
-        import sys
-        app = QtWidgets.QApplication(sys.argv)
-        MainWindow = QtWidgets.QMainWindow()
-        ui = Ui_MainWindow()
-        ui.setupUi(MainWindow)
-        MainWindow.show()
-        sys.exit(app.exec_())
+    import sys
 
-    run()
+    gettime = datetime.datetime.now().strftime("%H:%M:%S.%f")
+    GenerateReport.generate_para_report(str("System Start Booting with GUI on " + gettime))
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())

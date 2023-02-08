@@ -15,7 +15,7 @@ def create_simple_file_attendance():
     get_path = directory_attendance + get_date + ".csv"
     if not os.path.exists(get_path):
         with open(get_path, 'w+') as f:
-            f.write("Name, Datetime\n")
+            f.write("Name, Room ID, Datetime\n")
             f.close()
             print("[INFO]", get_date + ".csv has been created in", directory_attendance, "Folder")
     return str(get_path)

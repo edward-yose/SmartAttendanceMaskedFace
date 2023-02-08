@@ -8,6 +8,8 @@ import numpy as np
 from face_alignment import FaceMaskDetection
 from attendance import DailyAttendanceEntry
 from tools import model_restore_from_pb
+from report_tools import GenerateReport
+
 
 import tensorflow
 
@@ -21,6 +23,7 @@ else:
 print("Tensorflow version: ", tf.__version__)
 
 img_format = {'png', 'jpg', 'bmp'}
+room_id = '001'
 
 
 def video_init(camera_source=0, resolution="480", to_write=False, save_dir=None):
@@ -48,6 +51,7 @@ def video_init(camera_source=0, resolution="480", to_write=False, save_dir=None)
     return cap, height, width, writer
 
 def stream(pb_path, node_dict, ref_dir, camera_source=0, resolution="720", to_write=False, save_dir=None):
+    # var
     frame_count = 0
     FPS = "loading"
     face_mask_model_path = r'models/face_mask_detection.pb'
@@ -55,16 +59,17 @@ def stream(pb_path, node_dict, ref_dir, camera_source=0, resolution="720", to_wr
     id2class = {0: 'Mask', 1: 'NoMask'}
     batch_size = 32
     threshold = 0.8
-    # ----var
 
-    # ----Video streaming initialization
+    # Video streaming init
+    GenerateReport.generate_para_report("Video Init 1280x720")
     cap, height, width, writer = video_init(camera_source=camera_source, resolution=resolution, to_write=to_write,
                                             save_dir=save_dir)
 
-    # ----face detection init
+    # Face detection init (GPU RATION 0.1)
     fmd = FaceMaskDetection(face_mask_model_path, margin, GPU_ratio=None)
 
-    # ----face recognition init
+    # Face recognition init
+    GenerateReport.generate_para_report("Face Recognition with GPU if available")
     sess, tf_dict = model_restore_from_pb(pb_path, node_dict, GPU_ratio=None)
     print("[INFO] TF DICT : ", tf_dict)
     tf_input = tf_dict['input']
@@ -77,7 +82,8 @@ def stream(pb_path, node_dict, ref_dir, camera_source=0, resolution="720", to_wr
         tf_keep_prob = tf_dict['keep_prob']
         feed_dict[tf_keep_prob] = 1.0
 
-    # ----read images from the database
+    # Read images from the database
+    GenerateReport.generate_para_report("Read Images and store in embeddings")
     d_t = time.time()
     paths = [file.path for file in os.scandir(ref_dir) if file.name[-3:] in img_format]
     len_ref_path = len(paths)
@@ -114,14 +120,16 @@ def stream(pb_path, node_dict, ref_dir, camera_source=0, resolution="720", to_wr
 
         print("ref embedding shape", embeddings_ref.shape)
         print("It takes {} secs to get {} embeddings".format(d_t, len_ref_path))
+        GenerateReport.generate_para_report(str("Embeddings finished within " + str(d_t) +
+                                                " seconds and gain " + str(len_ref_path) + "embeddings"))
 
-    # ----tf setting for calculating distance
+    # Tensor setting for calculating distance
     if len_ref_path > 0:
         with tf.Graph().as_default():
             tf_tar = tf.placeholder(dtype=tf.float32, shape=tf_embeddings.shape[-1])
             tf_ref = tf.placeholder(dtype=tf.float32, shape=tf_embeddings.shape)
             tf_dis = tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(tf_ref, tf_tar)), axis=1))
-            # ----GPU setting
+            # GPU setting
             config = tf.ConfigProto(log_device_placement=True,
                                     allow_soft_placement=True,
                                     )
@@ -132,6 +140,7 @@ def stream(pb_path, node_dict, ref_dir, camera_source=0, resolution="720", to_wr
         feed_dict_2 = {tf_ref: embeddings_ref}
 
     # ----Get an image
+    GenerateReport.generate_para_report("OpenCV Init [END]")
     while cap.isOpened():
         ret, img = cap.read()  # img is the original image with BGR format. It's used to be shown by opencv
         if ret is True:
@@ -181,7 +190,7 @@ def stream(pb_path, node_dict, ref_dir, camera_source=0, resolution="720", to_wr
                                 (bbox[0] + 4, bbox[1] - 18),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-                    DailyAttendanceEntry.mark_this_day_attendance(name)
+                    DailyAttendanceEntry.mark_this_day_attendance(name, room_id)
 
             # ----FPS calculation
             if frame_count == 0:
@@ -200,8 +209,8 @@ def stream(pb_path, node_dict, ref_dir, camera_source=0, resolution="720", to_wr
             cv2.putText(img, FPS, (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
             # cv2.putText(img, CPU_USAGE, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-            APP_INFO = "Online"
-            cv2.putText(img, APP_INFO, (10, 700), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            writefps = FPS
+            GenerateReport.generate_fps_report(writefps)
 
             # ----image display
             cv2.imshow("FaceCamera", img)

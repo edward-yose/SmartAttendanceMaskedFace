@@ -1,0 +1,10 @@
+
+
+18:35:20.346592, System Start Booting with GUI on 18:35:20.345559
+18:35:20.459134, OpenCV Thread start
+18:35:21.269956, Video Init 1280x720
+18:35:28.144342, Face Detection Load 10% GPU if available
+18:35:28.841134, Face Recognition with GPU if available
+18:35:35.719077, Read Images and store in embeddings
+18:35:41.695117, Embeddings finished within 5.970052003860474 seconds and gain 51embeddings
+18:35:41.859363, OpenCV Init [END]

@@ -38,8 +38,8 @@ def model_restore_from_pb(pb_path, node_dict, GPU_ratio=None):
         return sess, node_dict
 
 
-class FaceMaskDetection():
-    def __init__(self, pb_path, margin=44, GPU_ratio=0.1):
+class FaceMaskDetection:
+    def __init__(self, pb_path, margin=44, GPU_ratio=None):
         print("[IMPORTANT] : CLASS Face Mask Detection Triggered")
         # ----var
         node_dict = {'input': 'data_1:0',
@@ -204,7 +204,6 @@ class FaceMaskDetection():
             idxs = np.delete(idxs, need_to_be_deleted_idx)
 
         # if the number of final bboxes is less than keep_top_k, we need to pad it.
-        # TODO
         return conf_keep_idx[pick]
 
     def inference(self, img_4d, ori_height, ori_width):
@@ -341,11 +340,10 @@ def img_alignment(root_dir, output_dir, margin=44, GPU_ratio=0.1, img_show=False
         print("ave process time of each image:", d_t / quantity)
 
 
-
 if __name__ == "__main__":
     # ----alignment
-    root_dir = r"D:\Data Center\IT Drill\PythonProject\MFR_Attendances\ori"
-    output_dir = r"D:\Data Center\IT Drill\PythonProject\MFR_Attendances\aligned"
+    root_dir = r"D:\Data Center\IT Drill\PythonProject\MFR_Attendances\maskedDetection\ori"
+    output_dir = r"D:\Data Center\IT Drill\PythonProject\MFR_Attendances\maskedDetection\aligned"
     margin = 20
     GPU_ratio = None
     img_show = False
