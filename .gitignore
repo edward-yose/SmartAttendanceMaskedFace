@@ -2,4 +2,5 @@
 /maskDetection/dataset
 /venv/
 /report_fps.csv
-/report_tools.csv
+/report_para.csv
+/test_dumb/
