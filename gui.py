@@ -25,7 +25,7 @@ else:
     tf.disable_v2_behavior()
 print("[GUI Application]Tensorflow version: ", tf.__version__)
 
-img_format = {'png', 'jpg', 'bmp'}
+img_format = {'png', 'jpg', 'bmp', 'jpeg'}
 room_id = "001"
 
 
@@ -210,10 +210,10 @@ class Ui_MainWindow(object):
         grey.fill(QColor('darkGray'))
         self.label_room_id.setText(room_id)
         self.label_camera.setPixmap(grey)
-        self.btn_exit.setDisabled(True)
-        self.btn_settings.setDisabled(True)
-        self.btn_report.setDisabled(True)
-        self.btn_save_new.setDisabled(True)
+        # self.btn_exit.setDisabled(True)
+        # self.btn_settings.setDisabled(True)
+        # self.btn_report.setDisabled(True)
+        # self.btn_save_new.setDisabled(True)
 
         # Manipulate datetime attendnace
         now = QDate.currentDate()
@@ -271,7 +271,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Smart Attendance System"))
         self.label_date.setText(_translate("MainWindow", "-"))
         self.label_2.setText(_translate("MainWindow", "Time :"))
         self.label_time.setText(_translate("MainWindow", "-"))

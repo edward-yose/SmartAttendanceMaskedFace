@@ -199,7 +199,7 @@ def stream(pb_path, node_dict, ref_dir, camera_source=0, resolution="720", to_wr
             if frame_count >= 10:
                 FPS = "FPS=%1f" % (10 / (time.time() - t_start))
                 frame_count = 0
-            print("FPS: ", FPS)
+            # print("FPS: ", FPS)
 
             # CPU_USAGE = "CPU Usage: "+str(psutil.cpu_percent())+"%"
             # MMR_USAGE = "Memory Usage: "+str(psutil.virtual_memory()[2])

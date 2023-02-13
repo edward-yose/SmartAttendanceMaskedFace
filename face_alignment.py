@@ -250,7 +250,7 @@ def img_alignment(root_dir, output_dir, margin=44, GPU_ratio=0.1, img_show=False
     d_t = time.time()
     # ----var
     face_mask_model_path = r'models/face_mask_detection.pb'
-    img_format = {'png', 'bmp', 'jpg'}
+    img_format = {'png', 'bmp', 'jpg', 'jpeg'}
     width_threshold = 60 + margin // 2
     height_threshold = 70 + margin // 2
     quantity = 0

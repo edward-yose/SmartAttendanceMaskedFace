@@ -32,7 +32,7 @@ class GenerateReport:
         file = create_fps_file()
         with open(file, 'a') as f:
             gettime = datetime.datetime.now().strftime("%H:%M:%S.%f")
-            print(fps, gettime)
+            # print(fps, gettime)
             f.writelines(f'\n{fps}, {gettime}')
             f.close()
 

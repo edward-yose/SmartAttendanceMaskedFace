@@ -13,7 +13,7 @@ else:
 
 print("Tensorflow version: ", tf.__version__)
 
-img_format = {'png', 'jpg', 'bmp'}
+img_format = {'png', 'jpg', 'bmp', 'jpeg'}
 
 
 def model_restore_from_pb(pb_path, node_dict, GPU_ratio=None):
@@ -61,7 +61,7 @@ def model_restore_from_pb(pb_path, node_dict, GPU_ratio=None):
 def img_removal_by_embed(root_dir, output_dir, pb_path, node_dict, threshold=0.7, type='copy', GPU_ratio=None,
                          dataset_range=None):
     # ----var
-    img_format = {"png", 'jpg', 'bmp'}
+    img_format = {"png", 'jpg', 'bmp', 'jpeg'}
     batch_size = 64
 
     # ----collect all folders
@@ -148,7 +148,7 @@ def img_removal_by_embed(root_dir, output_dir, pb_path, node_dict, threshold=0.7
 
 def check_path_length(root_dir, output_dir, threshold=5):
     # ----var
-    img_format = {"png", 'jpg'}
+    img_format = {"png", 'jpg', 'bmp', 'jpeg'}
 
     # ----collect all dirs
     dirs = [obj.path for obj in os.scandir(root_dir) if obj.is_dir()]
